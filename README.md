@@ -649,6 +649,6 @@ No Gráfico abaixo plotamos a visualização do risco retorno dos ativos
 listados na B3. As áreas em cinza demonstram os desvios padrão. A linha
 tracejada indica a média.
 
-    #> `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
 
 ![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
