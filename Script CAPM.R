@@ -20,7 +20,7 @@ a<-symb[1:10]#reduzindo o tamanho da lista
 dataEnv <- new.env()#criando um ambiente para receber os xts dos ativos
 
 #capturando os dados
-getSymbols(symb,#vetor com o nome da ação
+getSymbols.yahoo(symb,#vetor com o nome da ação
            periodicity='monthly',#periodicidade do ativo 
            from='2010-01-01',#inicio da serie temporal
            to=Sys.Date(),#fim da série temporal
@@ -72,29 +72,36 @@ b_ativo<-b_ativo%>%mutate(p.value_rec=case_when(
   p.value>=0.05~"não signifativo"
 ))
 b_ativo%>%group_by(term)%>%count(p.value_rec)
-#modelos já com os testes de autocorrelação e homocedasticidade
-b_test<-asset_long%>%nest(-ativo)%>%
-  mutate(model=map(data, ~lm(I(retorno-dados$selic)~I(dados$ibovespa-dados$selic), data = .)))%>%
-  mutate(bptest= map(model,bptest))%>%#teste de homocedasticidade
-  mutate(bptest=map(bptest,tidy))%>%unnest(bptest)%>%select(-statistic, -parameter, -method)%>%
-  rename(bptest_p.value=p.value)%>%
-  mutate(bgtest=map(model,bgtest))%>%#teste de autocorrelação
-  mutate(bgtest=map(bgtest,tidy))%>%unnest(bgtest)%>%select(-statistic, -parameter, -method)%>%
-  rename(bgtest_p.value=p.value)%>%
-  mutate(model = map(model, tidy))%>%unnest(model)%>%
-  mutate(p.value_rec=case_when(
-    p.value<=0.05~"signicativo",
-    p.value>=0.05~"não signifativo"
-  ))%>%
-  mutate(bp_p.value_rec=case_when(
-    bptest_p.value<=0.05~"signicativo",
-    bptest_p.value>=0.05~"não signifativo"
-  ))%>%
-  mutate(bg_p.value_rec=case_when(
-    bgtest_p.value<=0.05~"signicativo",
-    bgtest_p.value>=0.05~"não signifativo"
-  ))
 
+
+#modelos já com os testes de autocorrelação e homocedasticidade
+b_test <- asset_long %>% nest(-ativo) %>%
+  mutate(model = map(data, ~ lm(
+    I(retorno - dados$selic) ~ I(dados$ibovespa - dados$selic), data = .
+  ))) %>%
+  mutate(bptest = map(model, bptest)) %>% #teste de homocedasticidade
+  mutate(bptest = map(bptest, tidy)) %>% unnest(bptest) %>% select(-statistic,-parameter,-method) %>%
+  rename(bptest_p.value = p.value) %>%
+  mutate(bgtest = map(model, bgtest)) %>% #teste de autocorrelação
+  mutate(bgtest = map(bgtest, tidy)) %>% unnest(bgtest) %>% select(-statistic,-parameter,-method) %>%
+  rename(bgtest_p.value = p.value) %>%
+  mutate(model = map(model, tidy)) %>% unnest(model) %>%
+  mutate(p.value_rec = case_when(p.value <= 0.05 ~ "signicativo",
+                                 p.value >= 0.05 ~ "não signifativo")) %>%
+  mutate(
+    bp_p.value_rec = case_when(
+      bptest_p.value <= 0.05 ~ "signicativo",
+      bptest_p.value >= 0.05 ~ "não signifativo"
+    )
+  ) %>%
+  mutate(
+    bg_p.value_rec = case_when(
+      bgtest_p.value <= 0.05 ~ "signicativo",
+      bgtest_p.value >= 0.05 ~ "não signifativo"
+    )
+  )
+
+a %>% map(model, bptest)
 #Load data
 write_rds(asset_long, "asset_long.rds")
 write_rds(b_test, "b_testado.rds")

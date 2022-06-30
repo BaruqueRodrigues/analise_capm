@@ -1,0 +1,97 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Análise CAPM
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+## Explicando o repositório
+
+Nesse repositório contém alguns scripts que eu fiz enquanto estudava Modern Portfolio Theory. Como não terminei de estudar, volta e meia vou atualizar esse repositório. No momento ele só tem uma análise CAPM que fiz para alguns ativos da B3, a análise tem apenas sentido pedagógico e não deve ser levada a sério.
+
+Caso você tenha interesse nos dados da B3 e não tenha expertise em R execute o Script atualizacao_capm. Ele irá gerar um objetvo chamado retorno_ativos, com ele você pode fazer sua análise.
+
+## Um breve resumo sobre Modelos de Precificação de Ativos de Capital - CAPM
+
+Desde Markowitz (1959) investidores que tem maior aversão ao risco preferem carteiras de investimento fazendo um trade off entre risco e o retorno no período, onde buscam compor carteiras que promovam o maior retorno possível dada a minimização risco. 
+
+O modelo de CAPM foi proposto por Sharpe (1964), é um modelo de fator único, que considera apenas o risco sistêmico, e um dos modelos mais populares para a precificação de ativos, já que busca explicar a relação entre o retorno esperado do ativo e a incerteza do retorno do investimento.
+
+Um dos pontos chaves do modelo CAPM é saber o quanto um ativo premia de lucro em relação a taxa livre de risco. Para o Mercado Brasileiro utilizamos como taxa livre de risco a taxa SELIC, que registra a taxaédia ofertada pelos títulos públicos brasileiros. De forma mais simples, queremos entender o quão melhor é um ativo em relação ao investimento mais seguro disponível no mercado. Se o retorno do ativo pagar muito mais que a SELIC ele vale o investimento.
+
+## Análise dos Resultados
+
+Na tabela abaixo calculamos o risco-retorno dos ativos da B3. Para o coeficiente através de um modelo de regressão linear onde o parametro B1 é o ativo - selic e o B2 é o bovespa - selic.
+
+```{r, echo=FALSE, warning=FALSE}
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(broom)
+library(ggplot2)
+```
+
+```{r, echo=FALSE, warning=FALSE}
+retorno_ativos <- readr::read_rds("retorno_ativos.rds")
+
+retorno_ativos %>% 
+  select(Ativo = ticker, termo=term,
+         "Retorno Esperado" = estimate,
+         "p valor" =p.value) %>% 
+  filter(termo == "I(risco$bvsp - risco$selic)") %>% 
+  select(Ativo, "Retorno Esperado") %>% 
+  arrange(`Retorno Esperado`) %>% 
+  gt::gt() %>%
+  gt::tab_header("Retorno Esperado dos Ativos da B3") %>% 
+  gt::fmt_number(columns = "Retorno Esperado", decimals = 2)
+```
+
+No Gráfico abaixo plotamos a visualização do risco retorno dos ativos listados na B3.
+As áreas em cinza demonstram os desvios padrão. A linha tracejada indica a média.
+
+```{r, echo=FALSE, warning=FALSE, fig.width = 11, fig.height = 7}
+theme_set(theme_minimal())
+
+n_ativos <- retorno_ativos %>% 
+  filter(term == "I(risco$bvsp - risco$selic)") %>% 
+  pull(ticker)
+
+
+# Histograma com a visualização do risco retorno dos ativos listados na B3 
+# Areas em cinza por desvio padrão
+retorno_ativos %>% 
+  filter(term == "I(risco$bvsp - risco$selic)") %>% 
+  ggplot(aes( x= estimate))+
+  geom_rect(aes(xmin = mean(estimate) +1*sd(estimate), ymin = 0,
+                xmax = mean(estimate) -1*sd(estimate), ymax = Inf),
+            fill = "lightgrey")+
+  geom_rect(aes(xmin = mean(estimate) +1.96*sd(estimate), ymin = 0,
+                xmax = mean(estimate) -1.96*sd(estimate), ymax = Inf),
+            fill = "lightgrey", alpha = .03)+
+  geom_histogram(fill = "white", color = "black")+
+  geom_vline(aes(xintercept = mean(estimate)), linetype = "dashed")+
+  ggrepel::geom_text_repel(aes(label=ticker, y = runif(0, 8, n = n_ativos)))+
+  labs(y = NULL,
+       x = "Risco Retorno",
+       title = "Risco Retorno dos Ativos Listados na B3",
+       caption = "@baruqrodrigues")+
+  theme(plot.title = element_text(hjust = .5, size = 15),
+        plot.caption = element_text(hjust = 0.05),
+        panel.grid = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 12)
+        )
+  
+```
+
