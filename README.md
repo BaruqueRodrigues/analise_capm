@@ -45,14 +45,7 @@ Na tabela abaixo calculamos o risco-retorno dos ativos da B3. Para o
 coeficiente através de um modelo de regressão linear onde o parametro B1
 é o ativo - selic e o B2 é o bovespa - selic.
 
-    #> 
-    #> Attaching package: 'dplyr'
-    #> The following objects are masked from 'package:stats':
-    #> 
-    #>     filter, lag
-    #> The following objects are masked from 'package:base':
-    #> 
-    #>     intersect, setdiff, setequal, union
+ 
 
 <div id="ahvhpnaixa" style="overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <style>html {
